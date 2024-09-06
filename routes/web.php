@@ -1,33 +1,33 @@
 <?php
 
-use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\PostsController;
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
-Route::get('/', [PagesController::class, 'index']);
-//Route::resource('/blog', [PostsController::class, 'index']);
-Route::get('/blog', [PostsController::class, 'index']);
+use App\Http\Controllers\CommentsController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\BlogController;
+
+define('BLOG_SLUG_PATH', '/blog/{slug}');
+
+Route::get('/', [PagesController::class, 'index'])->name('home');
+
+// Blog post routes
+Route::get('/blog', [PostsController::class, 'index'])->name('blog.index');
 Route::get('/blog/create', [PostsController::class, 'create']);
-Route::POST('/blog/create', [PostsController::class, 'store']);
-Route::get('/blog/{slug}', [PostsController::class, 'show']);
-Route::get('/blog/{slug}/edit', [PostsController::class, 'edit']);
-Route::PUT('/blog/{slug}', [PostsController::class, 'update']);
-Route::delete('/blog/{slug}', [PostsController::class, 'destroy']);
+Route::post('/blog/create', [PostsController::class, 'store']);
 
+Route::get(BLOG_SLUG_PATH, [PostsController::class, 'show'])->name('blog.show');
+Route::get(BLOG_SLUG_PATH . '/edit', [PostsController::class, 'edit']);
+Route::put(BLOG_SLUG_PATH, [PostsController::class, 'update']);
+Route::delete(BLOG_SLUG_PATH, [PostsController::class, 'destroy']);
 
+// Comment routes
+Route::post(BLOG_SLUG_PATH . '/comments', [CommentsController::class, 'store'])->name('comments.store');
+Route::delete(BLOG_SLUG_PATH . '/comments/{commentId}', [CommentsController::class, 'destroy'])->name('comments.destroy');
+Route::get('/search', [BlogController::class, 'search'])->name('search');
+
+// Authentication routes
 Auth::routes();
 
+// Home route for authenticated users
 Route::get('/home', [HomeController::class, 'index'])->name('home');
-
-
-

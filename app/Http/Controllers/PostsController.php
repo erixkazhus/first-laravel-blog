@@ -11,6 +11,7 @@ use Illuminate\Http\Response;
 use App\Models\Post;
 use Cviebrock\EloquentSluggable\Services\SlugService;
 use Illuminate\Routing\Redirector;
+use App\Models\Category;
 
 class PostsController extends Controller
 {
@@ -37,7 +38,8 @@ class PostsController extends Controller
      */
     public function create()
     {
-        return view('blog.create');
+        $categories = Category::all();
+        return view('blog.create', compact('categories'));
     }
 
     /**
@@ -51,7 +53,9 @@ class PostsController extends Controller
         $request->validate([
             'title' => 'required',
             'description' => 'required',
-            'image' => 'required|mimes:jpg,png,jpeg|max:5048'
+            'image' => 'required|mimes:jpg,png,jpeg|max:5048',
+            'categories' => 'required|array',
+            'categories.*' => 'exists:categories,id',
         ]);
 
         $newImageName = uniqid() . '-' . $request->title . '-' . $request->image->extension();
@@ -59,13 +63,15 @@ class PostsController extends Controller
         $request->image->move(public_path('images'), $newImageName);
 
         try {
-                 Post::create([
+            $post = Post::create([
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
                 'slug' => SlugService::createSlug(Post::class, 'slug', $request->title),
                 'image_path' => $newImageName,
-                'user_id' => auth()->user()->id
+                'user_id' => auth()->id(),
             ]);
+
+            $post->categories()->attach($request->input('categories'));
 
 
             return redirect('/blog')
@@ -83,9 +89,8 @@ class PostsController extends Controller
      */
     public function show($slug)
     {
-        return view('blog.show')
-            ->with('post', Post::where('slug', $slug)->first());
-
+           $post = Post::where('slug', $slug)->with('comments.user')->firstOrFail();
+           return view('blog.show', compact('post'));
     }
 
     /**
@@ -96,8 +101,9 @@ class PostsController extends Controller
      */
     public function edit($slug)
     {
-        return view('blog.edit')
-            ->with('post', Post::where('slug', $slug)->first());
+        $post = Post::where('slug', $slug)->firstOrFail();
+        $categories = Category::all();
+        return view('blog.edit', compact('post', 'categories'));
     }
 
     /**
@@ -112,15 +118,18 @@ class PostsController extends Controller
         $request->validate([
             'title' => 'required',
             'description' => 'required',
+            'categories' => 'required|array',
+            'categories.*' => 'exists:categories,id',
         ]);
-        Post::where('slug', $slug)
-            ->update([
+        $post = Post::where('slug', $slug)->firstOrFail();
+            $post->update([
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
                 'slug' => SlugService::createSlug(Post::class, 'slug', $request->title),
 
                 'user_id' => auth()->user()->id
             ]);
+            $post->categories()->sync($request->input('categories'));
             return redirect('/blog')
                 ->with('message', 'Your post has been updated!');
     }
@@ -139,6 +148,7 @@ class PostsController extends Controller
         return redirect('/blog')
                 ->with('message', 'Your post has been deleted!');
     }
+    
 }
 
 

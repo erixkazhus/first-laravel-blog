@@ -6,9 +6,6 @@ use Cviebrock\EloquentSluggable\Sluggable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * @method static where(string $string, string $slug)
- */
 class Post extends Model
 {
     use HasFactory;
@@ -20,6 +17,12 @@ class Post extends Model
     {
        return $this->belongsTo(User::class);
     }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
     public function sluggable() : array
     {
         return [
@@ -27,5 +30,10 @@ class Post extends Model
                 'source' => 'title'
             ]
         ];
+    }
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class);
     }
 }
